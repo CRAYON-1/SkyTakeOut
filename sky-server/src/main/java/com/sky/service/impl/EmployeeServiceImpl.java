@@ -1,14 +1,22 @@
 package com.sky.service.impl;
 
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
 import com.sky.constant.MessageConstant;
+import com.sky.constant.PasswordConstant;
 import com.sky.constant.StatusConstant;
+import com.sky.dto.EmployeeDTO;
 import com.sky.dto.EmployeeLoginDTO;
+import com.sky.dto.EmployeePageQueryDTO;
 import com.sky.entity.Employee;
 import com.sky.exception.AccountLockedException;
 import com.sky.exception.AccountNotFoundException;
 import com.sky.exception.PasswordErrorException;
 import com.sky.mapper.EmployeeMapper;
+import com.sky.result.PageResult;
 import com.sky.service.EmployeeService;
+import io.swagger.models.auth.In;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
@@ -55,5 +63,76 @@ public class EmployeeServiceImpl implements EmployeeService {
         //3、返回实体对象
         return employee;
     }
+
+    /**
+     * 增加员工
+     *
+     * @param employeeDTO
+     */
+    @Override
+    public void addEmployee(EmployeeDTO employeeDTO) {
+        Employee employee = new Employee();
+        BeanUtils.copyProperties(employeeDTO, employee);
+        employee.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
+        employee.setStatus(StatusConstant.ENABLE);
+        employeeMapper.addEmployee(employee);
+    }
+
+    /**
+     * 分页查询员工
+     *
+     * @param employeePageQueryDTO
+     * @return
+     */
+    @Override
+    public PageResult pageQueryEmployee(EmployeePageQueryDTO employeePageQueryDTO) {
+        PageHelper.startPage(employeePageQueryDTO.getPage(),employeePageQueryDTO.getPageSize());
+        Page<Employee> page = employeeMapper.queryEmployee(employeePageQueryDTO.getName());
+        page.getResult().forEach(employee -> employee.setPassword("****"));
+        PageResult pageResult = new PageResult();
+        pageResult.setRecords(page.getResult());
+        pageResult.setTotal(page.getTotal());
+        return pageResult;
+    }
+
+    /**
+     * 根据ID修改员工状态
+     *
+     * @param status
+     * @param id
+     */
+    @Override
+    public void modifyStatus(Integer status, Long id) {
+        Employee employee = new Employee();
+        employee.setStatus(status);
+        employee.setId(id);
+        employeeMapper.updateEmployee(employee);
+    }
+
+    /**
+     * 根据ID修改员工信息
+     *
+     * @param employeeDTO
+     */
+    @Override
+    public void modifyEmployee(EmployeeDTO employeeDTO) {
+        Employee employee = new Employee();
+        BeanUtils.copyProperties(employeeDTO,employee);
+        employeeMapper.updateEmployee(employee);
+    }
+
+    /**
+     * 根据ID查询员工信息
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public Employee getEmployeeById(Long id) {
+        Employee employee = employeeMapper.getById(id);
+        employee.setPassword("****");
+        return employee;
+    }
+
 
 }
